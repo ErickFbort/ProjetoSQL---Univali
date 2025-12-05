@@ -1,0 +1,49 @@
+# Sistema Operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+error_log
+access_log
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# Configurações locais (não commitar credenciais)
+config.local.php
+.env
+.env.local
+
+# Node modules (se adicionar no futuro)
+node_modules/
+package-lock.json
+
+# Build/Dist
+dist/
+build/
+
+# Cache
+.cache/
+*.cache
+

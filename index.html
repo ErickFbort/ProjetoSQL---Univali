@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Processos Aéreos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Barra de Navegação -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">H&E</div>
+            <div class="nav-menu">
+                <a href="#" class="nav-link">Início</a>
+                <a href="#" class="nav-link">Processos</a>
+                <a href="#" class="nav-link">Relatórios</a>
+                <a href="#" class="nav-link">Configurações</a>
+            </div>
+            <button class="btn-nav-account">
+                <span class="icon-account">👤</span>
+                Acesse sua conta
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="hero-header">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="title-main">Gestão de</span>
+                    <span class="title-accent">Processos Aéreos</span>
+                </h1>
+                <p class="hero-subtitle">Bem-vindo ao Novo!</p>
+                <p class="hero-description">Sistema completo para cadastro e gerenciamento de processos aéreos</p>
+            </div>
+        </header>
+
+        <main>
+            <!-- Formulário de Cadastro/Edição -->
+            <section class="form-section">
+                <h2 id="form-title">Cadastrar Novo Processo Aéreo</h2>
+                <form id="process-form">
+                    <input type="hidden" id="process-id" value="">
+                    
+                    <div class="form-group">
+                        <label for="numero-processo">Número do Processo *</label>
+                        <input type="text" id="numero-processo" required placeholder="Ex: PRO-2024-001">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipo-processo">Tipo de Processo *</label>
+                        <select id="tipo-processo" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="Licenciamento">Licenciamento</option>
+                            <option value="Autorização">Autorização</option>
+                            <option value="Certificação">Certificação</option>
+                            <option value="Fiscalização">Fiscalização</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="empresa">Empresa/Organização *</label>
+                        <input type="text" id="empresa" required placeholder="Nome da empresa">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="responsavel">Responsável *</label>
+                        <input type="text" id="responsavel" required placeholder="Nome do responsável">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="data-inicio">Data de Início *</label>
+                        <input type="date" id="data-inicio" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="data-prevista">Data Prevista de Conclusão</label>
+                        <input type="date" id="data-prevista">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status *</label>
+                        <select id="status" required>
+                            <option value="">Selecione o status</option>
+                            <option value="Em Análise">Em Análise</option>
+                            <option value="Aprovado">Aprovado</option>
+                            <option value="Rejeitado">Rejeitado</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="observacoes">Observações</label>
+                        <textarea id="observacoes" rows="4" placeholder="Informações adicionais sobre o processo"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="submit-btn" class="btn btn-primary">
+                            Cadastrar Processo
+                            <span class="btn-arrow">→</span>
+                        </button>
+                        <button type="button" id="cancel-btn" class="btn btn-outline" style="display: none;">Cancelar Edição</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Lista de Processos -->
+            <section class="list-section">
+                <div class="list-header">
+                    <h2>Processos Cadastrados</h2>
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Buscar processo...">
+                        <button id="search-btn" class="btn btn-primary">🔍 Buscar</button>
+                    </div>
+                </div>
+
+                <div id="process-list" class="process-list">
+                    <!-- Processos serão inseridos aqui via JavaScript -->
+                </div>
+
+                <div id="empty-state" class="empty-state">
+                    <p>Nenhum processo cadastrado ainda.</p>
+                    <p class="empty-hint">Use o formulário acima para cadastrar seu primeiro processo aéreo.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3>Confirmar Exclusão</h3>
+            <p>Tem certeza que deseja excluir este processo?</p>
+            <div class="modal-actions">
+                <button id="confirm-delete" class="btn btn-danger">Sim, Excluir</button>
+                <button id="cancel-delete" class="btn btn-outline">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
