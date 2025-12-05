@@ -15,32 +15,70 @@ Sistema web completo para cadastro e gerenciamento de processos aéreos, desenvo
 - 📱 **Design Responsivo**: Interface adaptável para diferentes tamanhos de tela
 - 🎨 **Identidade Visual H&E**: Design moderno com tema azul escuro e laranja
 
-## 🚀 Como Usar
+## 🚀 Instalação e Configuração
 
-### Opção 1: Abrir diretamente no navegador
+### Pré-requisitos
 
-1. Abra o arquivo `index.html` em qualquer navegador moderno (Chrome, Firefox, Edge, Safari)
-2. Não é necessário instalar nada ou configurar servidor
+- PHP 7.4+ 
+- MySQL 8.0+
+- Servidor web (Apache/Nginx) ou PHP built-in server
 
-### Opção 2: Usar um servidor local (recomendado)
+### Instalação Rápida
 
-Se você tiver Python instalado:
+1. **Clonar o repositório:**
+   ```bash
+   git clone https://github.com/ErickFbort/ProjetoSQL---Univali.git
+   cd ProjetoSQL---Univali
+   ```
 
+2. **Configurar o banco de dados:**
+   ```bash
+   ./configurar_banco.sh
+   ```
+   Ou manualmente:
+   ```bash
+   mysql -u root -p < database.sql
+   ```
+
+3. **Configurar credenciais:**
+   Edite `api.php` (linhas 11-14) com suas credenciais MySQL:
+   ```php
+   define('DB_USER', 'root');
+   define('DB_PASS', 'sua_senha');
+   ```
+
+4. **Iniciar o servidor:**
+   ```bash
+   ./iniciar.sh
+   ```
+   Ou manualmente:
+   ```bash
+   php -S localhost:8000
+   ```
+
+5. **Acessar o sistema:**
+   Abra no navegador: `http://localhost:8000/index.html`
+
+### Verificar Instalação
+
+Execute o script de diagnóstico:
 ```bash
-# Python 3
-python -m http.server 8000
-
-# Ou Python 2
-python -m SimpleHTTPServer 8000
+./verificar_instalacao.sh
 ```
 
-Depois acesse: `http://localhost:8000`
+## 💻 Como Usar
 
-Ou usando Node.js com http-server:
+### Modo com MySQL (Recomendado)
 
-```bash
-npx http-server -p 8000
-```
+1. Configure o banco de dados (veja Instalação acima)
+2. Inicie o servidor PHP
+3. Acesse via navegador
+
+### Modo LocalStorage (Teste/Demo)
+
+1. Abra `index.html` diretamente no navegador
+2. Funciona sem servidor (dados salvos no navegador)
+3. Perfeito para demonstração rápida
 
 ## 📖 Campos do Formulário
 
@@ -93,8 +131,7 @@ ProjetoSQL/
 ├── configurar_banco.sh     # Script de configuração
 ├── verificar_instalacao.sh # Diagnóstico do sistema
 ├── README.md               # Este arquivo
-├── README_SQL.md           # Documentação do banco
-└── GUIA_RAPIDO.md          # Guia rápido de instalação
+└── README_SQL.md           # Documentação do banco
 ```
 
 ## 📝 Próximos Passos (Melhorias Futuras)
