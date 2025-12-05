@@ -309,8 +309,8 @@ async function buscarProcessos(termo) {
 // Interface e Interações
 // ============================================
 
-// Editar processo
-async function editarProcesso(id) {
+// Editar processo (disponível globalmente para onclick)
+window.editarProcesso = async function(id) {
     try {
         setLoading(true);
         let processo;
@@ -354,8 +354,8 @@ async function editarProcesso(id) {
     }
 }
 
-// Deletar processo (abrir modal)
-function deletarProcesso(id) {
+// Deletar processo (abrir modal) - disponível globalmente para onclick
+window.deletarProcesso = function(id) {
     processoParaDeletar = id;
     confirmModal.classList.add('show');
 }
@@ -472,16 +472,57 @@ function renderizarProcessos(processosFiltrados = null) {
                     </div>
                 ` : ''}
                 <div class="process-actions">
-                    <button class="btn btn-edit" onclick="editarProcesso(${id})" ${isLoading ? 'disabled' : ''}>
+                    <button class="btn btn-edit" data-action="edit" data-id="${id}" ${isLoading ? 'disabled' : ''}>
                         ✏️ Editar
                     </button>
-                    <button class="btn btn-delete" onclick="deletarProcesso(${id})" ${isLoading ? 'disabled' : ''}>
+                    <button class="btn btn-delete" data-action="delete" data-id="${id}" ${isLoading ? 'disabled' : ''}>
                         🗑️ Excluir
                     </button>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // Adicionar event listeners aos botões após renderizar
+    adicionarEventListenersBotoes();
+}
+
+// Adicionar event listeners aos botões de ação
+function adicionarEventListenersBotoes() {
+    // Remover listeners anteriores para evitar duplicação
+    const botoesEdit = processList.querySelectorAll('[data-action="edit"]');
+    const botoesDelete = processList.querySelectorAll('[data-action="delete"]');
+    
+    botoesEdit.forEach(btn => {
+        // Remover listener anterior se existir
+        btn.replaceWith(btn.cloneNode(true));
+    });
+    
+    botoesDelete.forEach(btn => {
+        // Remover listener anterior se existir
+        btn.replaceWith(btn.cloneNode(true));
+    });
+    
+    // Adicionar novos listeners
+    processList.querySelectorAll('[data-action="edit"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const id = parseInt(btn.getAttribute('data-id'));
+            if (id && !isLoading) {
+                editarProcesso(id);
+            }
+        });
+    });
+    
+    processList.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const id = parseInt(btn.getAttribute('data-id'));
+            if (id && !isLoading) {
+                deletarProcesso(id);
+            }
+        });
+    });
 }
 
 // Filtrar processos
