@@ -1,6 +1,8 @@
-# ✈️ Sistema de Gestão de Processos Aéreos
+# ✈️ Sistema H&E - Gestão de Processos Aéreos
 
-Sistema web simples e moderno para cadastro e gerenciamento de processos aéreos, desenvolvido como parte do projeto de desenvolvimento.
+Sistema web completo para cadastro e gerenciamento de processos aéreos, desenvolvido como parte do projeto de desenvolvimento da Univali.
+
+**Repositório:** [ProjetoSQL - Univali](https://github.com)
 
 ## 📋 Funcionalidades
 
@@ -8,8 +10,10 @@ Sistema web simples e moderno para cadastro e gerenciamento de processos aéreos
 - 📝 **Edição de Processos**: Atualização de dados já cadastrados
 - 🗑️ **Exclusão de Processos**: Remoção de processos com confirmação
 - 🔍 **Busca e Filtragem**: Pesquisa rápida por qualquer campo do processo
-- 💾 **Armazenamento Local**: Dados salvos no navegador (localStorage)
+- 💾 **Banco de Dados MySQL**: Integração completa com MySQL para persistência de dados
+- 🔄 **API REST**: API PHP para operações CRUD completas
 - 📱 **Design Responsivo**: Interface adaptável para diferentes tamanhos de tela
+- 🎨 **Identidade Visual H&E**: Design moderno com tema azul escuro e laranja
 
 ## 🚀 Como Usar
 
@@ -61,27 +65,41 @@ A aplicação possui uma interface moderna e intuitiva com:
 
 ## 💾 Armazenamento de Dados
 
-Os dados são armazenados localmente no navegador usando `localStorage`. Isso significa que:
+O sistema suporta dois modos de armazenamento:
 
-- Os dados persistem mesmo após fechar o navegador
-- Os dados são específicos para cada navegador/usuário
-- Não há necessidade de banco de dados ou servidor
+### Modo MySQL (Recomendado)
+- Dados persistidos em banco de dados MySQL
+- API REST em PHP para operações CRUD
+- Dados centralizados e seguros
+- Veja `README_SQL.md` para detalhes
 
-**Nota**: Para produção, recomenda-se integrar com um backend e banco de dados real.
+### Modo LocalStorage (Fallback)
+- Funciona sem servidor para testes
+- Dados salvos no navegador
+- Perfeito para desenvolvimento e demonstração
 
 ## 🔧 Estrutura do Projeto
 
 ```
 ProjetoSQL/
-├── index.html      # Estrutura HTML da aplicação
-├── styles.css      # Estilos e design da interface
-├── script.js       # Lógica JavaScript e funcionalidades CRUD
-└── README.md       # Este arquivo
+├── index.html              # Frontend principal
+├── styles.css              # Estilos e design
+├── script.js               # Lógica JavaScript e CRUD
+├── api.php                 # API REST PHP
+├── config.php              # Configuração do banco
+├── database.sql            # Estrutura do banco MySQL
+├── crud_queries.sql        # Queries SQL de exemplo
+├── iniciar.sh              # Script de inicialização
+├── configurar_banco.sh     # Script de configuração
+├── verificar_instalacao.sh # Diagnóstico do sistema
+├── README.md               # Este arquivo
+├── README_SQL.md           # Documentação do banco
+└── GUIA_RAPIDO.md          # Guia rápido de instalação
 ```
 
 ## 📝 Próximos Passos (Melhorias Futuras)
 
-- [ ] Integração com banco de dados (SQL)
+- [x] Integração com banco de dados (SQL) ✅
 - [ ] Autenticação de usuários
 - [ ] Exportação de dados (PDF, Excel)
 - [ ] Relatórios e estatísticas
@@ -91,10 +109,11 @@ ProjetoSQL/
 
 ## 🛠️ Tecnologias Utilizadas
 
-- HTML5
-- CSS3 (com Flexbox e Grid)
-- JavaScript (ES6+)
-- LocalStorage API
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: PHP 7.4+
+- **Banco de Dados**: MySQL 8.0+
+- **API**: REST API com JSON
+- **Design**: Identidade Visual H&E (Azul escuro + Laranja)
 
 ## 📄 Licença
 
