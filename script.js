@@ -1,5 +1,7 @@
 // Configuração da API
-const API_URL = 'api.php'; // Ajuste o caminho se necessário
+// Detectar se está rodando via file:// ou http://
+const isFileProtocol = window.location.protocol === 'file:';
+const API_URL = isFileProtocol ? null : 'api.php'; // Só funciona via servidor HTTP
 
 // Variáveis globais
 let processos = [];
@@ -22,9 +24,59 @@ const cancelDeleteBtn = document.getElementById('cancel-delete');
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
-    carregarProcessos();
+    verificarAmbiente();
     configurarEventos();
 });
+
+// Verificar se está rodando em ambiente adequado
+function verificarAmbiente() {
+    if (isFileProtocol) {
+        mostrarAvisoServidor();
+        // Usar localStorage como fallback temporário
+        carregarProcessosLocalStorage();
+    } else {
+        carregarProcessos();
+    }
+}
+
+// Mostrar aviso sobre necessidade de servidor
+function mostrarAvisoServidor() {
+    const aviso = document.createElement('div');
+    aviso.id = 'aviso-servidor';
+    aviso.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+        color: white;
+        padding: 20px;
+        z-index: 10000;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        text-align: center;
+    `;
+    aviso.innerHTML = `
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <strong>⚠️ ATENÇÃO: Servidor Necessário</strong>
+            <p style="margin: 10px 0; font-size: 0.9em;">
+                Este sistema precisa rodar em um servidor web para funcionar corretamente com MySQL.
+                <br>
+                <strong>Execute no terminal:</strong> <code style="background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">php -S localhost:8000</code>
+                <br>
+                Depois acesse: <code style="background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">http://localhost:8000/index.html</code>
+                <br>
+                <small style="opacity: 0.9;">Por enquanto, os dados serão salvos localmente no navegador.</small>
+            </p>
+            <button onclick="this.parentElement.parentElement.remove(); document.body.style.paddingTop = '0';" style="background: white; color: #ff6b35; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px;">
+                Entendi, continuar mesmo assim
+            </button>
+        </div>
+    `;
+    document.body.insertBefore(aviso, document.body.firstChild);
+    
+    // Ajustar padding do body para não sobrepor o aviso
+    document.body.style.paddingTop = '120px';
+}
 
 // Configurar eventos
 function configurarEventos() {
@@ -78,7 +130,13 @@ async function handleSubmit(e) {
         form.reset();
         processoEditando = null;
         atualizarInterfaceFormulario();
-        await carregarProcessos();
+        
+        // Recarregar processos (funciona com API e localStorage)
+        if (API_URL) {
+            await carregarProcessos();
+        } else {
+            carregarProcessosLocalStorage();
+        }
     } catch (error) {
         mostrarMensagem('Erro ao salvar processo: ' + error.message, 'error');
     } finally {
@@ -106,6 +164,11 @@ function coletarDadosFormulario() {
 
 // CREATE - Criar novo processo
 async function criarProcesso(dados) {
+    if (!API_URL) {
+        // Fallback para localStorage
+        return criarProcessoLocalStorage(dados);
+    }
+    
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
@@ -124,6 +187,12 @@ async function criarProcesso(dados) {
 
 // READ - Carregar todos os processos
 async function carregarProcessos() {
+    if (!API_URL) {
+        // Fallback para localStorage
+        carregarProcessosLocalStorage();
+        return;
+    }
+    
     try {
         setLoading(true);
         const response = await fetch(API_URL);
@@ -146,6 +215,11 @@ async function carregarProcessos() {
 
 // READ - Buscar processo por ID
 async function buscarProcessoPorId(id) {
+    if (!API_URL) {
+        // Fallback para localStorage
+        return processos.find(p => p.id === id);
+    }
+    
     const response = await fetch(`${API_URL}?id=${id}`);
     
     if (!response.ok) {
@@ -157,6 +231,11 @@ async function buscarProcessoPorId(id) {
 
 // UPDATE - Atualizar processo existente
 async function atualizarProcesso(id, dados) {
+    if (!API_URL) {
+        // Fallback para localStorage
+        return atualizarProcessoLocalStorage(id, dados);
+    }
+    
     const response = await fetch(API_URL, {
         method: 'PUT',
         headers: {
@@ -178,6 +257,11 @@ async function atualizarProcesso(id, dados) {
 
 // DELETE - Excluir processo
 async function deletarProcessoAPI(id) {
+    if (!API_URL) {
+        // Fallback para localStorage
+        return deletarProcessoLocalStorage(id);
+    }
+    
     const response = await fetch(`${API_URL}?id=${id}`, {
         method: 'DELETE'
     });
@@ -194,6 +278,12 @@ async function deletarProcessoAPI(id) {
 async function buscarProcessos(termo) {
     if (!termo || termo.trim() === '') {
         await carregarProcessos();
+        return;
+    }
+    
+    if (!API_URL) {
+        // Fallback para localStorage
+        filtrarProcessosLocalStorage(termo);
         return;
     }
     
@@ -223,7 +313,13 @@ async function buscarProcessos(termo) {
 async function editarProcesso(id) {
     try {
         setLoading(true);
-        const processo = await buscarProcessoPorId(id);
+        let processo;
+        
+        if (API_URL) {
+            processo = await buscarProcessoPorId(id);
+        } else {
+            processo = processos.find(p => p.id === id);
+        }
         
         if (!processo) {
             mostrarMensagem('Processo não encontrado', 'error');
@@ -232,13 +328,18 @@ async function editarProcesso(id) {
         
         processoEditando = id;
         
-        // Preencher formulário (adaptar nomes dos campos)
-        document.getElementById('numero-processo').value = processo.numero_processo || '';
-        document.getElementById('tipo-processo').value = processo.tipo_processo || '';
+        // Preencher formulário (adaptar nomes dos campos - suporta ambos os formatos)
+        const numeroProcesso = processo.numero_processo || processo.numeroProcesso || '';
+        const tipoProcesso = processo.tipo_processo || processo.tipoProcesso || '';
+        const dataInicio = processo.data_inicio || processo.dataInicio || '';
+        const dataPrevista = processo.data_prevista || processo.dataPrevista || '';
+        
+        document.getElementById('numero-processo').value = numeroProcesso;
+        document.getElementById('tipo-processo').value = tipoProcesso;
         document.getElementById('empresa').value = processo.empresa || '';
         document.getElementById('responsavel').value = processo.responsavel || '';
-        document.getElementById('data-inicio').value = processo.data_inicio || '';
-        document.getElementById('data-prevista').value = processo.data_prevista || '';
+        document.getElementById('data-inicio').value = dataInicio;
+        document.getElementById('data-prevista').value = dataPrevista;
         document.getElementById('status').value = processo.status || '';
         document.getElementById('observacoes').value = processo.observacoes || '';
         
@@ -267,7 +368,13 @@ async function confirmarExclusao() {
             await deletarProcessoAPI(processoParaDeletar);
             mostrarMensagem('Processo excluído com sucesso!', 'success');
             processoParaDeletar = null;
-            await carregarProcessos();
+            
+            // Recarregar processos (funciona com API e localStorage)
+            if (API_URL) {
+                await carregarProcessos();
+            } else {
+                carregarProcessosLocalStorage();
+            }
         } catch (error) {
             mostrarMensagem('Erro ao excluir processo: ' + error.message, 'error');
         } finally {
@@ -451,6 +558,85 @@ function mostrarMensagem(mensagem, tipo) {
         mensagemEl.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => mensagemEl.remove(), 300);
     }, 4000);
+}
+
+// ============================================
+// FALLBACK: Funções para localStorage (quando file://)
+// ============================================
+
+function carregarProcessosLocalStorage() {
+    try {
+        const dados = localStorage.getItem('processosAereos');
+        processos = dados ? JSON.parse(dados) : [];
+        renderizarProcessos();
+    } catch (error) {
+        console.error('Erro ao carregar do localStorage:', error);
+        processos = [];
+        renderizarProcessos();
+    }
+}
+
+function criarProcessoLocalStorage(dados) {
+    const novoProcesso = {
+        id: Date.now(),
+        numero_processo: dados.numero_processo,
+        tipo_processo: dados.tipo_processo,
+        empresa: dados.empresa,
+        responsavel: dados.responsavel,
+        data_inicio: dados.data_inicio,
+        data_prevista: dados.data_prevista,
+        status: dados.status,
+        observacoes: dados.observacoes,
+        data_criacao: new Date().toISOString()
+    };
+    
+    processos.push(novoProcesso);
+    salvarNoLocalStorage();
+    return novoProcesso;
+}
+
+function atualizarProcessoLocalStorage(id, dados) {
+    const index = processos.findIndex(p => p.id === id);
+    if (index !== -1) {
+        processos[index] = {
+            ...processos[index],
+            ...dados,
+            data_atualizacao: new Date().toISOString()
+        };
+        salvarNoLocalStorage();
+        return processos[index];
+    }
+    throw new Error('Processo não encontrado');
+}
+
+function deletarProcessoLocalStorage(id) {
+    processos = processos.filter(p => p.id !== id);
+    salvarNoLocalStorage();
+    return { message: 'Processo excluído com sucesso' };
+}
+
+function filtrarProcessosLocalStorage(termo) {
+    const termoLower = termo.toLowerCase();
+    const processosFiltrados = processos.filter(processo => {
+        return (
+            (processo.numero_processo && processo.numero_processo.toLowerCase().includes(termoLower)) ||
+            (processo.tipo_processo && processo.tipo_processo.toLowerCase().includes(termoLower)) ||
+            (processo.empresa && processo.empresa.toLowerCase().includes(termoLower)) ||
+            (processo.responsavel && processo.responsavel.toLowerCase().includes(termoLower)) ||
+            (processo.status && processo.status.toLowerCase().includes(termoLower)) ||
+            (processo.observacoes && processo.observacoes.toLowerCase().includes(termoLower))
+        );
+    });
+    renderizarProcessos(processosFiltrados);
+}
+
+function salvarNoLocalStorage() {
+    try {
+        localStorage.setItem('processosAereos', JSON.stringify(processos));
+    } catch (error) {
+        console.error('Erro ao salvar no localStorage:', error);
+        mostrarMensagem('Erro ao salvar dados localmente', 'error');
+    }
 }
 
 // Adicionar animações CSS dinamicamente
