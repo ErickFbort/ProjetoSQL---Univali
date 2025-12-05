@@ -35,7 +35,14 @@ try {
     );
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Erro ao conectar ao banco de dados: ' . $e->getMessage()]);
+    $mensagem = 'Erro ao conectar ao banco de dados: ' . $e->getMessage();
+    
+    // Mensagem mais amigável se o banco não existir
+    if (strpos($e->getMessage(), 'Unknown database') !== false) {
+        $mensagem = 'Banco de dados não encontrado. Acesse http://localhost:8000/setup.php para criar o banco.';
+    }
+    
+    echo json_encode(['error' => $mensagem]);
     exit();
 }
 
