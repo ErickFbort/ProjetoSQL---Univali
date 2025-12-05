@@ -5,6 +5,8 @@ const API_URL = isFileProtocol ? null : 'api.php'; // Só funciona via servidor 
 
 // Variáveis globais
 let processos = [];
+let empresas = [];
+let responsaveis = [];
 let processoEditando = null;
 let processoParaDeletar = null;
 let isLoading = false;
@@ -23,9 +25,13 @@ const confirmDeleteBtn = document.getElementById('confirm-delete');
 const cancelDeleteBtn = document.getElementById('cancel-delete');
 
 // Inicialização
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     verificarAmbiente();
     configurarEventos();
+    if (API_URL) {
+        await carregarEmpresas();
+        await carregarResponsaveis();
+    }
 });
 
 // Verificar se está rodando em ambiente adequado
@@ -149,8 +155,8 @@ function coletarDadosFormulario() {
     return {
         numero_processo: document.getElementById('numero-processo').value.trim(),
         tipo_processo: document.getElementById('tipo-processo').value,
-        empresa: document.getElementById('empresa').value.trim(),
-        responsavel: document.getElementById('responsavel').value.trim(),
+        empresa_id: parseInt(document.getElementById('empresa').value),
+        responsavel_id: parseInt(document.getElementById('responsavel').value),
         data_inicio: document.getElementById('data-inicio').value,
         data_prevista: document.getElementById('data-prevista').value || null,
         status: document.getElementById('status').value,
@@ -333,11 +339,13 @@ window.editarProcesso = async function(id) {
         const tipoProcesso = processo.tipo_processo || processo.tipoProcesso || '';
         const dataInicio = processo.data_inicio || processo.dataInicio || '';
         const dataPrevista = processo.data_prevista || processo.dataPrevista || '';
+        const empresaId = processo.empresa_id || processo.empresaId || '';
+        const responsavelId = processo.responsavel_id || processo.responsavelId || '';
         
         document.getElementById('numero-processo').value = numeroProcesso;
         document.getElementById('tipo-processo').value = tipoProcesso;
-        document.getElementById('empresa').value = processo.empresa || '';
-        document.getElementById('responsavel').value = processo.responsavel || '';
+        document.getElementById('empresa').value = empresaId;
+        document.getElementById('responsavel').value = responsavelId;
         document.getElementById('data-inicio').value = dataInicio;
         document.getElementById('data-prevista').value = dataPrevista;
         document.getElementById('status').value = processo.status || '';
@@ -450,11 +458,11 @@ function renderizarProcessos(processosFiltrados = null) {
                     </div>
                     <div class="info-item">
                         <span class="info-label">Empresa</span>
-                        <span class="info-value">${processo.empresa}</span>
+                        <span class="info-value">${processo.empresa_nome || processo.empresa || 'N/A'}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Responsável</span>
-                        <span class="info-value">${processo.responsavel}</span>
+                        <span class="info-value">${processo.responsavel_nome || processo.responsavel || 'N/A'}${processo.responsavel_cargo ? ' - ' + processo.responsavel_cargo : ''}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Data de Início</span>
@@ -599,6 +607,78 @@ function mostrarMensagem(mensagem, tipo) {
         mensagemEl.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => mensagemEl.remove(), 300);
     }, 4000);
+}
+
+// ============================================
+// FUNÇÕES PARA EMPRESAS E RESPONSÁVEIS
+// ============================================
+
+// Carregar empresas
+async function carregarEmpresas() {
+    if (!API_URL) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}?entity=empresas`);
+        if (!response.ok) {
+            throw new Error('Erro ao carregar empresas');
+        }
+        empresas = await response.json();
+        preencherSelectEmpresas();
+    } catch (error) {
+        console.error('Erro ao carregar empresas:', error);
+        mostrarMensagem('Erro ao carregar empresas', 'error');
+    }
+}
+
+// Preencher select de empresas
+function preencherSelectEmpresas() {
+    const selectEmpresa = document.getElementById('empresa');
+    if (!selectEmpresa) return;
+    
+    selectEmpresa.innerHTML = '<option value="">Selecione a empresa</option>';
+    
+    empresas.forEach(empresa => {
+        const option = document.createElement('option');
+        option.value = empresa.id;
+        option.textContent = empresa.nome + (empresa.cnpj ? ` (${empresa.cnpj})` : '');
+        selectEmpresa.appendChild(option);
+    });
+}
+
+// Carregar responsáveis
+async function carregarResponsaveis() {
+    if (!API_URL) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}?entity=responsaveis`);
+        if (!response.ok) {
+            throw new Error('Erro ao carregar responsáveis');
+        }
+        responsaveis = await response.json();
+        preencherSelectResponsaveis();
+    } catch (error) {
+        console.error('Erro ao carregar responsáveis:', error);
+        mostrarMensagem('Erro ao carregar responsáveis', 'error');
+    }
+}
+
+// Preencher select de responsáveis
+function preencherSelectResponsaveis() {
+    const selectResponsavel = document.getElementById('responsavel');
+    if (!selectResponsavel) return;
+    
+    selectResponsavel.innerHTML = '<option value="">Selecione o responsável</option>';
+    
+    responsaveis.forEach(responsavel => {
+        const option = document.createElement('option');
+        option.value = responsavel.id;
+        option.textContent = responsavel.nome + (responsavel.cargo ? ` - ${responsavel.cargo}` : '');
+        selectResponsavel.appendChild(option);
+    });
 }
 
 // ============================================
