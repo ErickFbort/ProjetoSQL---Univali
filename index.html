@@ -136,10 +136,13 @@
     <!-- Modal de Confirmação -->
     <div id="confirm-modal" class="modal">
         <div class="modal-content">
-            <h3>Confirmar Exclusão</h3>
-            <p>Tem certeza que deseja excluir este processo?</p>
+            <h3>⚠️ Confirmar Exclusão</h3>
+            <p id="confirm-message">Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.</p>
+            <p style="color: #ff6b35; font-weight: 600; margin-top: 10px; font-size: 0.9em;">
+                O processo será excluído permanentemente do banco de dados.
+            </p>
             <div class="modal-actions">
-                <button id="confirm-delete" class="btn btn-danger">Sim, Excluir</button>
+                <button id="confirm-delete" class="btn btn-danger">Sim, Excluir Permanentemente</button>
                 <button id="cancel-delete" class="btn btn-outline">Cancelar</button>
             </div>
         </div>

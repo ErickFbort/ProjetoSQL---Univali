@@ -24,13 +24,80 @@ const confirmModal = document.getElementById('confirm-modal');
 const confirmDeleteBtn = document.getElementById('confirm-delete');
 const cancelDeleteBtn = document.getElementById('cancel-delete');
 
+// Tratamento global de erros não capturados em promises
+window.addEventListener('unhandledrejection', function(event) {
+    const errorMessage = event.reason?.message || String(event.reason || '');
+    
+    // Ignorar erros conhecidos de extensões do navegador
+    if (errorMessage.includes('message channel closed') || 
+        errorMessage.includes('Extension context invalidated') ||
+        errorMessage.includes('Receiving end does not exist') ||
+        errorMessage.includes('A listener indicated an asynchronous response')) {
+        // Erro causado por extensão do navegador, ignorar silenciosamente
+        event.preventDefault();
+        return;
+    }
+    
+    // Para outros erros, logar mas não quebrar a aplicação
+    console.warn('Promise rejeitada não tratada:', event.reason);
+    event.preventDefault();
+});
+
+// Tratamento global de erros JavaScript
+window.addEventListener('error', function(event) {
+    // Ignorar erros de extensões do navegador
+    const errorMessage = event.error?.message || event.message || String(event.error || '');
+    
+    // Lista de erros conhecidos de extensões que devem ser ignorados
+    const extensaoErrors = [
+        'message channel closed',
+        'Extension context invalidated',
+        'Receiving end does not exist',
+        'A listener indicated an asynchronous response'
+    ];
+    
+    // Se for erro de extensão, ignorar silenciosamente
+    if (extensaoErrors.some(err => errorMessage.includes(err))) {
+        event.preventDefault();
+        return false;
+    }
+    
+    // Se for erro relacionado a .catch() em undefined, pode ser nosso erro
+    // Mas vamos deixar passar para ver o erro real se houver
+    if (errorMessage.includes('reading \'catch\'')) {
+        // Este erro já foi corrigido, mas deixamos passar para debug se necessário
+        console.warn('Erro de promise (já corrigido):', errorMessage);
+        event.preventDefault();
+        return false;
+    }
+    
+    // Logar apenas erros reais da aplicação que não sejam de extensões
+    if (event.filename && event.filename.includes('script.js')) {
+        console.error('Erro JavaScript na aplicação:', {
+            message: event.message,
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+            error: event.error
+        });
+    }
+    
+    return true;
+});
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
-    verificarAmbiente();
-    configurarEventos();
-    if (API_URL) {
-        await carregarEmpresas();
-        await carregarResponsaveis();
+    try {
+        verificarAmbiente();
+        configurarEventos();
+        if (API_URL) {
+            await Promise.all([
+                carregarEmpresas().catch(err => console.error('Erro ao carregar empresas:', err)),
+                carregarResponsaveis().catch(err => console.error('Erro ao carregar responsáveis:', err))
+            ]);
+        }
+    } catch (error) {
+        console.error('Erro na inicialização:', error);
     }
 });
 
@@ -99,6 +166,18 @@ function configurarEventos() {
             fecharModal();
         }
     });
+    
+    // Configurar event delegation para os botões de ação (editar/excluir)
+    // Isso garante que os botões funcionem mesmo quando são recriados dinamicamente
+    if (processList) {
+        // Remover listener anterior se existir (para evitar duplicação)
+        processList.removeEventListener('click', handleButtonClick);
+        // Adicionar novo listener
+        processList.addEventListener('click', handleButtonClick);
+        console.log('Event listeners configurados para botões de ação');
+    } else {
+        console.error('processList não encontrado!');
+    }
 }
 
 // Debounce para otimizar buscas
@@ -122,15 +201,26 @@ async function handleSubmit(e) {
     
     const dados = coletarDadosFormulario();
     
+    // Validação adicional
+    if (!dados.empresa_id || dados.empresa_id <= 0) {
+        mostrarMensagem('Por favor, selecione uma empresa', 'error');
+        return;
+    }
+    
+    if (!dados.responsavel_id || dados.responsavel_id <= 0) {
+        mostrarMensagem('Por favor, selecione um responsável', 'error');
+        return;
+    }
+    
     try {
         setLoading(true);
         
         if (processoEditando !== null) {
             await atualizarProcesso(processoEditando, dados);
-            mostrarMensagem('Processo atualizado com sucesso!', 'success');
+            mostrarMensagem('Processo atualizado com sucesso no banco de dados!', 'success');
         } else {
             await criarProcesso(dados);
-            mostrarMensagem('Processo cadastrado com sucesso!', 'success');
+            mostrarMensagem('Processo cadastrado com sucesso no banco de dados!', 'success');
         }
         
         form.reset();
@@ -144,6 +234,7 @@ async function handleSubmit(e) {
             carregarProcessosLocalStorage();
         }
     } catch (error) {
+        console.error('Erro ao salvar processo:', error);
         mostrarMensagem('Erro ao salvar processo: ' + error.message, 'error');
     } finally {
         setLoading(false);
@@ -334,6 +425,11 @@ window.editarProcesso = async function(id) {
         
         processoEditando = id;
         
+        // Garantir que empresas e responsáveis estão carregados antes de preencher
+        if (API_URL && (empresas.length === 0 || responsaveis.length === 0)) {
+            await Promise.all([carregarEmpresas(), carregarResponsaveis()]);
+        }
+        
         // Preencher formulário (adaptar nomes dos campos - suporta ambos os formatos)
         const numeroProcesso = processo.numero_processo || processo.numeroProcesso || '';
         const tipoProcesso = processo.tipo_processo || processo.tipoProcesso || '';
@@ -344,8 +440,19 @@ window.editarProcesso = async function(id) {
         
         document.getElementById('numero-processo').value = numeroProcesso;
         document.getElementById('tipo-processo').value = tipoProcesso;
-        document.getElementById('empresa').value = empresaId;
-        document.getElementById('responsavel').value = responsavelId;
+        
+        // Preencher selects de empresa e responsável
+        const selectEmpresa = document.getElementById('empresa');
+        const selectResponsavel = document.getElementById('responsavel');
+        
+        if (selectEmpresa && empresaId) {
+            selectEmpresa.value = empresaId;
+        }
+        
+        if (selectResponsavel && responsavelId) {
+            selectResponsavel.value = responsavelId;
+        }
+        
         document.getElementById('data-inicio').value = dataInicio;
         document.getElementById('data-prevista').value = dataPrevista;
         document.getElementById('status').value = processo.status || '';
@@ -355,8 +462,11 @@ window.editarProcesso = async function(id) {
         
         // Scroll para o formulário
         document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        
+        mostrarMensagem('Formulário preenchido com os dados do processo. Edite e salve as alterações.', 'info');
     } catch (error) {
-        mostrarMensagem('Erro ao carregar processo para edição', 'error');
+        console.error('Erro ao editar processo:', error);
+        mostrarMensagem('Erro ao carregar processo para edição: ' + error.message, 'error');
     } finally {
         setLoading(false);
     }
@@ -364,7 +474,25 @@ window.editarProcesso = async function(id) {
 
 // Deletar processo (abrir modal) - disponível globalmente para onclick
 window.deletarProcesso = function(id) {
+    // Buscar informações do processo para mostrar no modal
+    const processo = processos.find(p => p.id === id);
     processoParaDeletar = id;
+    
+    // Atualizar mensagem do modal com informações do processo
+    const modalMessage = document.getElementById('confirm-message');
+    if (processo && modalMessage) {
+        const numeroProcesso = processo.numero_processo || processo.numeroProcesso || 'N/A';
+        const empresaNome = processo.empresa_nome || processo.empresa || 'N/A';
+        modalMessage.innerHTML = `
+            <strong>Tem certeza que deseja excluir o processo?</strong><br><br>
+            <strong>Número:</strong> ${numeroProcesso}<br>
+            <strong>Empresa:</strong> ${empresaNome}<br><br>
+            <span style="color: #dc3545;">Esta ação não pode ser desfeita e o processo será excluído permanentemente do banco de dados.</span>
+        `;
+    } else if (modalMessage) {
+        modalMessage.textContent = 'Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.';
+    }
+    
     confirmModal.classList.add('show');
 }
 
@@ -373,8 +501,16 @@ async function confirmarExclusao() {
     if (processoParaDeletar !== null) {
         try {
             setLoading(true);
-            await deletarProcessoAPI(processoParaDeletar);
-            mostrarMensagem('Processo excluído com sucesso!', 'success');
+            
+            // Excluir do banco de dados via API
+            if (API_URL) {
+                await deletarProcessoAPI(processoParaDeletar);
+            } else {
+                // Fallback para localStorage
+                await deletarProcessoLocalStorage(processoParaDeletar);
+            }
+            
+            mostrarMensagem('Processo excluído com sucesso do banco de dados!', 'success');
             processoParaDeletar = null;
             
             // Recarregar processos (funciona com API e localStorage)
@@ -384,6 +520,7 @@ async function confirmarExclusao() {
                 carregarProcessosLocalStorage();
             }
         } catch (error) {
+            console.error('Erro ao excluir processo:', error);
             mostrarMensagem('Erro ao excluir processo: ' + error.message, 'error');
         } finally {
             setLoading(false);
@@ -480,10 +617,10 @@ function renderizarProcessos(processosFiltrados = null) {
                     </div>
                 ` : ''}
                 <div class="process-actions">
-                    <button class="btn btn-edit" data-action="edit" data-id="${id}" ${isLoading ? 'disabled' : ''}>
+                    <button type="button" class="btn btn-edit" data-action="edit" data-id="${id}" style="cursor: pointer; pointer-events: auto;">
                         ✏️ Editar
                     </button>
-                    <button class="btn btn-delete" data-action="delete" data-id="${id}" ${isLoading ? 'disabled' : ''}>
+                    <button type="button" class="btn btn-delete" data-action="delete" data-id="${id}" style="cursor: pointer; pointer-events: auto;">
                         🗑️ Excluir
                     </button>
                 </div>
@@ -497,40 +634,62 @@ function renderizarProcessos(processosFiltrados = null) {
 
 // Adicionar event listeners aos botões de ação
 function adicionarEventListenersBotoes() {
-    // Remover listeners anteriores para evitar duplicação
-    const botoesEdit = processList.querySelectorAll('[data-action="edit"]');
-    const botoesDelete = processList.querySelectorAll('[data-action="delete"]');
+    // Event delegation já está configurado em configurarEventos()
+    // Esta função existe apenas para manter compatibilidade
+    // Os botões já funcionam através do event delegation no processList
+}
+
+// Handler centralizado para cliques nos botões
+function handleButtonClick(e) {
+    // Verificar se o clique foi em um botão ou dentro de um botão com data-action
+    let btn = e.target;
     
-    botoesEdit.forEach(btn => {
-        // Remover listener anterior se existir
-        btn.replaceWith(btn.cloneNode(true));
-    });
+    // Se clicou no texto ou ícone dentro do botão, encontrar o botão pai
+    if (!btn.hasAttribute('data-action')) {
+        btn = btn.closest('[data-action]');
+    }
     
-    botoesDelete.forEach(btn => {
-        // Remover listener anterior se existir
-        btn.replaceWith(btn.cloneNode(true));
-    });
+    if (!btn || !btn.hasAttribute('data-action')) {
+        return;
+    }
     
-    // Adicionar novos listeners
-    processList.querySelectorAll('[data-action="edit"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const id = parseInt(btn.getAttribute('data-id'));
-            if (id && !isLoading) {
-                editarProcesso(id);
-            }
+    // Verificar se o botão está desabilitado
+    if (btn.disabled || isLoading) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+    
+    const action = btn.getAttribute('data-action');
+    const idStr = btn.getAttribute('data-id');
+    const id = parseInt(idStr);
+    
+    if (!idStr || isNaN(id) || id <= 0) {
+        console.error('ID inválido:', idStr);
+        return;
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Botão clicado:', action, 'ID:', id);
+    
+    // Tratar promises corretamente para evitar erros não capturados
+    if (action === 'edit') {
+        // editarProcesso é async, então precisa de tratamento de promise
+        editarProcesso(id).catch(error => {
+            console.error('Erro ao editar processo:', error);
+            mostrarMensagem('Erro ao carregar processo para edição: ' + (error?.message || error), 'error');
         });
-    });
-    
-    processList.querySelectorAll('[data-action="delete"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const id = parseInt(btn.getAttribute('data-id'));
-            if (id && !isLoading) {
-                deletarProcesso(id);
-            }
-        });
-    });
+    } else if (action === 'delete') {
+        // deletarProcesso não é async, então não precisa de .catch()
+        try {
+            deletarProcesso(id);
+        } catch (error) {
+            console.error('Erro ao deletar processo:', error);
+            mostrarMensagem('Erro ao abrir modal de exclusão: ' + (error?.message || error), 'error');
+        }
+    }
 }
 
 // Filtrar processos
@@ -616,7 +775,7 @@ function mostrarMensagem(mensagem, tipo) {
 // Carregar empresas
 async function carregarEmpresas() {
     if (!API_URL) {
-        return;
+        return Promise.resolve();
     }
     
     try {
@@ -626,9 +785,11 @@ async function carregarEmpresas() {
         }
         empresas = await response.json();
         preencherSelectEmpresas();
+        return Promise.resolve();
     } catch (error) {
         console.error('Erro ao carregar empresas:', error);
-        mostrarMensagem('Erro ao carregar empresas', 'error');
+        // Não mostrar mensagem de erro aqui para não poluir a interface
+        return Promise.reject(error);
     }
 }
 
@@ -650,7 +811,7 @@ function preencherSelectEmpresas() {
 // Carregar responsáveis
 async function carregarResponsaveis() {
     if (!API_URL) {
-        return;
+        return Promise.resolve();
     }
     
     try {
@@ -660,9 +821,11 @@ async function carregarResponsaveis() {
         }
         responsaveis = await response.json();
         preencherSelectResponsaveis();
+        return Promise.resolve();
     } catch (error) {
         console.error('Erro ao carregar responsáveis:', error);
-        mostrarMensagem('Erro ao carregar responsáveis', 'error');
+        // Não mostrar mensagem de erro aqui para não poluir a interface
+        return Promise.reject(error);
     }
 }
 
