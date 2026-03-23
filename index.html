@@ -10,12 +10,15 @@
     <!-- Barra de Navegação -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">H&E</div>
+            <a href="index.html" class="nav-brand-link" title="Página inicial"><div class="nav-brand">H&E</div></a>
             <div class="nav-menu">
-                <a href="#" class="nav-link">Início</a>
-                <a href="#" class="nav-link">Processos</a>
-                <a href="#" class="nav-link">Relatórios</a>
-                <a href="#" class="nav-link">Configurações</a>
+                <a href="index.html" class="nav-link active">Início</a>
+                <a href="index.html#processos" class="nav-link">Processos</a>
+                <a href="index.html#relatorios" class="nav-link">Relatórios</a>
+                <a href="index.html#configuracoes" class="nav-link">Configurações</a>
+                <a href="sobre.html" class="nav-link">Sobre nós</a>
+                <a href="produtos.html" class="nav-link">Produtos/Serviços</a>
+                <a href="contato.html" class="nav-link">Contato</a>
             </div>
             <button class="btn-nav-account">
                 <span class="icon-account">👤</span>
@@ -38,7 +41,7 @@
 
         <main>
             <!-- Formulário de Cadastro/Edição -->
-            <section class="form-section">
+            <section id="processos" class="form-section">
                 <h2 id="form-title">Cadastrar Novo Processo Aéreo</h2>
                 <form id="process-form">
                     <input type="hidden" id="process-id" value="">
@@ -112,7 +115,7 @@
             </section>
 
             <!-- Lista de Processos -->
-            <section class="list-section">
+            <section id="relatorios" class="list-section">
                 <div class="list-header">
                     <h2>Processos Cadastrados</h2>
                     <div class="search-box">
@@ -129,6 +132,13 @@
                     <p>Nenhum processo cadastrado ainda.</p>
                     <p class="empty-hint">Use o formulário acima para cadastrar seu primeiro processo aéreo.</p>
                 </div>
+            </section>
+
+            <section id="configuracoes" class="form-section" aria-labelledby="configuracoes-titulo">
+                <h2 id="configuracoes-titulo">Configurações</h2>
+                <p class="hero-description" style="max-width: none;">
+                    Preferências do sistema e integrações podem ser configuradas nesta área conforme evolução do projeto.
+                </p>
             </section>
         </main>
     </div>
